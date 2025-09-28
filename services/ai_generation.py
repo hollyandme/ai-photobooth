@@ -46,7 +46,7 @@ Frame 3: Both winking and laughing with mouths open.
 
 Frame 4: Both leaning close, laughing naturally.
 
-Arrange the four photos vertically with a thin white border between them, capturing the close and intimate atmosphere of the original reference.""""
+Arrange the four photos vertically with a thin white border between them, capturing the close and intimate atmosphere of the original reference."""
         
         try:
             print("Calling Gemini API...")
