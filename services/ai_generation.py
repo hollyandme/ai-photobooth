@@ -36,7 +36,7 @@ class PhotoBoothGenerator:
         image1_b64 = base64.b64encode(image1_jpeg).decode()
         image2_b64 = base64.b64encode(image2_jpeg).decode()
         
-        prompt = """Create a vintage black-and-white photobooth strip, composed of exactly four distinct frames stacked to a 2x2 grid square format, Each frame should be high-contrast black-and-white with authentic film grain and soft photobooth lighting.
+        prompt = """Create a vintage black-and-white photobooth strip, composed of exactly four distinct frames each featureing person A and person B stacked to a 2x2 grid square format, Each frame should be high-contrast black-and-white with authentic film grain and soft photobooth lighting.
 
 For the first pair of subjects (from the provided selfies):
 
@@ -44,7 +44,7 @@ Frame 1 (Top): Both making a kissy face.
 
 Frame 2: Both smiling wide, one flashing a peace sign.
 
-Frame 3: Both winking and laughing with mouths open.
+Frame 3: Both looking serious and shocked.
 
 Frame 4 (Bottom): Both leaning close, laughing naturally.
 
