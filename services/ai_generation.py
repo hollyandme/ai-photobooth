@@ -36,7 +36,17 @@ class PhotoBoothGenerator:
         image1_b64 = base64.b64encode(image1_jpeg).decode()
         image2_b64 = base64.b64encode(image2_jpeg).decode()
         
-        prompt = """Generate a photo booth style image showing these two people together in the same frame. Make it look like a classic vintage photo booth portrait with both people clearly visible."""
+        prompt = """Create a vintage black-and-white photobooth strip with four frames featuring two friends. The strip should have the authentic look of an old photobooth: high-contrast black-and-white film, slight grain, and soft lighting. Each frame should capture a playful pose.
+
+Frame 1: Both making a kissy face.
+
+Frame 2: Both smiling wide, one flashing a peace sign.
+
+Frame 3: Both winking and laughing with mouths open.
+
+Frame 4: Both leaning close, laughing naturally.
+
+Arrange the four photos vertically with a thin white border between them, capturing the close and intimate atmosphere of the original reference.""""
         
         try:
             print("Calling Gemini API...")
