@@ -34,8 +34,15 @@ if os.path.exists("static"):
 templates = Jinja2Templates(directory="templates")
 
 # Initialize services
+# Initialize services (delay AI generator initialization)
 storage_service = CloudStorageService()
-ai_generator = PhotoBoothGenerator()
+ai_generator = None
+
+def get_ai_generator():
+    global ai_generator
+    if ai_generator is None:
+        ai_generator = PhotoBoothGenerator()
+    return ai_generator
 
 # Store generation jobs (in production, use a database)
 generation_jobs = {}
@@ -65,7 +72,8 @@ async def process_generation(job_id: str, image1_data: bytes, image2_data: bytes
         
         # Generate the AI image using Gemini
         print("About to call AI generator...")
-        generated_image = await ai_generator.generate_photobooth_image(image1_data, image2_data)
+        generator = get_ai_generator()
+        generated_image = await generator.generate_photobooth_image(image1_data, image2_data)
         print(f"AI generator returned: {type(generated_image)}")
         print(f"Generated image size: {len(generated_image) if generated_image else 0} bytes")
         
