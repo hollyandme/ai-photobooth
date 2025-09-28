@@ -175,9 +175,9 @@ async def generate_photobooth_image(
         # Generate job ID and process
         job_id = str(uuid.uuid4())
         
-       # Process synchronously for simpler API
-generator = get_ai_generator()  # This will raise an error if it fails
-generated_image = await generator.generate_photobooth_image(image1_data, image2_data)
+        # Process synchronously for simpler API
+        generator = get_ai_generator()  # This will raise an error if it fails
+        generated_image = await generator.generate_photobooth_image(image1_data, image2_data)
         
         # Save generated image
         generated_filename = f"generated_{job_id}.jpg"
