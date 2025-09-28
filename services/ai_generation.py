@@ -36,7 +36,7 @@ class PhotoBoothGenerator:
         image1_b64 = base64.b64encode(image1_jpeg).decode()
         image2_b64 = base64.b64encode(image2_jpeg).decode()
         
-        prompt = """Create a vintage black-and-white photobooth strip, composed of exactly four distinct frames stacked vertically. The overall aspect ratio of the strip should be tall and narrow 296x1228 format, Each frame should be high-contrast black-and-white with authentic film grain and soft photobooth lighting.
+        prompt = """Create a vintage black-and-white photobooth strip, composed of exactly four distinct frames stacked to a 2x2 grid square format, Each frame should be high-contrast black-and-white with authentic film grain and soft photobooth lighting.
 
 For the first pair of subjects (from the provided selfies):
 
