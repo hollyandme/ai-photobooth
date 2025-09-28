@@ -36,19 +36,17 @@ class PhotoBoothGenerator:
         image1_b64 = base64.b64encode(image1_jpeg).decode()
         image2_b64 = base64.b64encode(image2_jpeg).decode()
         
-        prompt = """Create a vintage black-and-white photobooth strip, composed of exactly four distinct frames each featureing person A and person B stacked to a 2x2 grid square format, Each frame should be high-contrast black-and-white with authentic film grain and soft photobooth lighting.
+        prompt = """Create a 2x2 square grid of four vintage black-and-white photobooth photos, featuring two distinct friends (Subject A and Subject B) in every frame. The image must have the high-contrast black-and-white film, slight grain, and soft lighting of an old photobooth.
 
-For the first pair of subjects (from the provided selfies):
+Top-Left Frame: Subject A and Subject B both making a kissy face.
 
-Frame 1 (Top): Both making a kissy face.
+Top-Right Frame: Subject A and Subject B both smiling wide, with one of them flashing a peace sign.
 
-Frame 2: Both smiling wide, one flashing a peace sign.
+Bottom-Left Frame: Subject A and Subject B both winking and laughing with mouths open.
 
-Frame 3: Both looking serious and shocked.
+Bottom-Right Frame: Subject A and Subject B both leaning close, laughing naturally.
 
-Frame 4 (Bottom): Both leaning close, laughing naturally.
-
-Ensure a thin white border separates each of the four frames. The poses should be playful and capture the natural interaction of two close friends."""
+Ensure all four photos are arranged in a square 2x2 grid with thin white borders separating them."""
         
         try:
             print("Calling Gemini API...")
