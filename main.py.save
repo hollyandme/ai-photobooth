@@ -1,0 +1,154 @@
+python -m py_compile main.py
+from fastapi import FastAPI, File, UploadFile, 
+HTTPException, BackgroundTasks
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse, FileResponse
+from fastapi import Request
+import os
+from dotenv import load_dotenv
+from services.storage import CloudStorageService
+from services.ai_generation import PhotoBoothGenerator
+import uuid
+from fastapi import Form
+import json
+
+# Load environment variables
+load_dotenv()
+
+app = FastAPI(title="AI Photobooth", description="Generate AI photo booth images from selfies")
+
+# Mount static files and templates
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
+# Initialize services
+storage_service = CloudStorageService()
+ai_generator = PhotoBoothGenerator()
+
+# Store generation jobs (in production, use a database)
+generation_jobs = {}
+
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    """Home page with upload interface"""
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/download/{filename}")
+async def download_image(filename: str):
+    """Serve generated images"""
+    file_path = os.path.join("temp_images", filename)
+    if os.path.exists(file_path):
+        return FileResponse(
+            path=file_path,
+            media_type='image/jpeg',
+            filename=f"ai-photobooth-{filename}"
+        )
+    else:
+        raise HTTPException(status_code=404, detail="Image not found")
+async def process_generation(job_id: str, image1_data: bytes, image2_data: bytes):
+    """Background task to generate AI image"""
+    try:
+        print(f"Starting generation for job {job_id}")
+        generation_jobs[job_id] = {"status": "processing"}
+        
+        # Generate the AI image using Gemini
+        print("About to call AI generator...")
+        generated_image = await ai_generator.generate_photobooth_image(image1_data, image2_data)
+        print(f"AI generator returned: {type(generated_image)}")
+        print(f"Generated image size: {len(generated_image) if generated_image else 0} bytes")
+        
+        print(f"AI generation complete for job {job_id}")
+        
+        # Upload to local storage
+        blob_name = storage_service.upload_generated_image(generated_image, job_id)
+        print(f"Saved locally: {blob_name}")
+        
+        # Get local URL
+        download_url = storage_service.get_signed_url(blob_name)
+        print(f"Generated local URL for job {job_id}")
+        
+        # Update job status
+        generation_jobs[job_id] = {
+            "status": "completed",
+            "download_url": download_url
+        }
+        
+    except Exception as e:
+        print(f"Generation failed for job {job_id}: {e}")
+        import traceback
+        traceback.print_exc()
+        generation_jobs[job_id] = {"status": "failed", "error": str(e)}
+
+@app.post("/upload-file")
+async def upload_single_file(file: UploadFile = File(...)):
+
+@app.get("/temp/{filename}")
+async def serve_temp_file(filename: str):
+
+@app.post("/generate-image")
+async def generate_image_from_urls(
+    background_tasks: BackgroundTasks,
+    prompt: str = Form(...),
+    file_urls: str = Form(...)
+):
+
+@app.get("/polished", response_class=HTMLResponse)
+async def polished_design(request: Request):
+
+
+@app.post("/upload")
+async def upload_and_generate(
+    background_tasks: BackgroundTasks,
+    image1: UploadFile = File(...), 
+    image2: UploadFile = File(...)
+):
+    """Handle dual image upload and start AI generation"""
+    
+    # Validate file types
+    if not image1.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File 1 must be an image")
+    if not image2.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File 2 must be an image")
+    
+    try:
+        print(f"Received upload: {image1.filename}, {image2.filename}")
+        
+        # Read image data
+        image1_data = await image1.read()
+        image2_data = await image2.read()
+        
+        print(f"File sizes: {len(image1_data)}, {len(image2_data)} bytes")
+        
+        # Generate job ID
+        job_id = str(uuid.uuid4())
+        print(f"Created job: {job_id}")
+        
+        # Start background generation
+        background_tasks.add_task(process_generation, job_id, image1_data, image2_data)
+        
+        return {"job_id": job_id, "status": "started"}
+        
+    except Exception as e:
+        print(f"Upload error: {e}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+@app.get("/polished", response_class=HTMLResponse)
+async def polished_design(request: Request):
+    """Serve the polished design"""
+    return templates.TemplateResponse("polished.html", {"request": request})
+
+
+@app.get("/status/{job_id}")
+async def check_status(job_id: str):
+    """Check generation status"""
+    if job_id not in generation_jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    status = generation_jobs[job_id]
+    print(f"Status check for {job_id}: {status}")
+    return status
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

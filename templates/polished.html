@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Photo Booth</title>
+    <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Lato:wght@400;700&family=Special+Elite&family=Anton&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            background-color: #EFEFEF;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Lato', sans-serif;
+        }
+        .font-abril {
+            font-family: 'Abril Fatface', serif;
+        }
+        .font-special-elite {
+            font-family: 'Special Elite', cursive;
+        }
+        .font-anton {
+            font-family: 'Anton', sans-serif;
+        }
+        
+        .container {
+            position: relative;
+            min-height: 150vh; /* Increased for scroll space */
+            width: 100%;
+            background: #EFEFEF;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 48px 16px 100px; /* Added bottom padding */
+            overflow: hidden;
+        }
+        
+        /* Title Image */
+        .title-image {
+            width: 100%;
+            height: auto;
+            max-width: 14rem;
+            user-select: none;
+            z-index: 10;
+            position: relative;
+            margin-bottom: 16px;
+            transform-origin: center;
+            will-change: transform;
+        }
+        
+        /* Subtitle */
+        .subtitle {
+            font-family: 'Special Elite', cursive;
+            font-size: 0.875rem;
+            color: #C73E2E;
+            letter-spacing: 0.3em;
+            max-width: 20rem;
+            margin: 0 auto 4px;
+            text-align: center;
+        }
+        
+        /* Upload Section */
+        .upload-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            padding-top: 32px;
+            width: 100%;
+            transform-origin: center;
+            will-change: transform;
+        }
+        
+        /* Background decorative elements */
+        .sample-strip {
+            position: absolute;
+            z-index: 0;
+            width: 96px;
+            height: auto;
+            user-select: none;
+            right: 40px;
+            top: 30px;
+            transform-origin: center;
+            will-change: transform;
+        }
+        
+        .instructions-image {
+            width: 20rem;
+            height: auto;
+            user-select: none;
+            z-index: 5;
+            margin-bottom: 8px;
+            transform-origin: center;
+            will-change: transform;
+        }
+        
+        /* Upload area */
+        .upload-area {
+            position: relative;
+            width: 16rem;
+            height: 9rem;
+            z-index: 10;
+        }
+        
+        .upload-box {
+            position: absolute;
+            width: 7rem;
+            height: 7rem;
+            border: 2px solid #C73E2E;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: bold;
+            color: #C73E2E;
+            background-color: #EFEFEF;
+            transition: transform 0.3s ease;
+            transform-origin: center;
+            will-change: transform;
+        }
+        
+        .upload-box:hover {
+            transform: scale(1.05);
+        }
+        
+        .upload-box.red {
+            background-color: #C73E2E;
+            color: white;
+        }
+        
+        .upload-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .upload-box:first-child {
+            left: 0;
+            top: -35px;
+        }
+        
+        .upload-box:last-child {
+            right: 0;
+            top: -40px;
+        }
+        
+        /* Generate Button */
+        .generate-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            margin-top: -48px;
+            z-index: 20;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+        
+        .generate-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .generate-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .generate-btn:disabled {
+            cursor: not-allowed;
+        }
+        
+        .take-photo-image {
+            width: 176px;
+            height: 176px;
+            object-fit: contain;
+        }
+        
+        .take-photo-image.loading {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        /* Loading */
+        .loading-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 50vh;
+            max-width: 28rem;
+            margin: 0 auto;
+            padding: 16px;
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 20px auto;
+        }
+        
+        /* Result Section */
+        .result-section {
+            z-index: 30;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 100vh;
+            max-width: 28rem;
+            margin: 0 auto;
+            padding: 16px;
+        }
+        
+        .result-title {
+            font-family: 'Special Elite', cursive;
+            font-size: 0.875rem;
+            color: #C73E2E;
+            letter-spacing: 0.3em;
+            max-width: 20rem;
+            margin: 0 auto 20px;
+            text-align: center;
+        }
+        
+        .photo-container {
+            position: relative;
+            margin-bottom: 32px;
+            margin-top: 16px;
+        }
+        
+        .photo-border {
+            background: black;
+            padding: 4px;
+            border-radius: 8px;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .photo-slot {
+            overflow: hidden;
+            border-radius: 6px;
+        }
+        
+        .result-image {
+            border-radius: 6px;
+            max-width: 20rem;
+            width: 100%;
+            height: auto;
+            animation: slideDown 0.8s ease-out;
+        }
+        
+        /* Action Buttons */
+        .download-btn {
+            position: absolute;
+            right: -40px;
+            bottom: 80px;
+            width: 112px;
+            height: 112px;
+            transition: transform 0.3s ease;
+            z-index: 20;
+            animation: popIn 0.5s ease-out 1s both;
+        }
+        
+        .download-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .download-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .new-photo-btn {
+            position: absolute;
+            left: -40px;
+            bottom: 16px;
+            width: 96px;
+            height: 96px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            z-index: 20;
+            animation: popIn 0.5s ease-out 1s both;
+        }
+        
+        .new-photo-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .new-photo-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        /* Utility Classes */
+        .hidden {
+            display: none;
+        }
+        
+        /* Animations */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0%); }
+        }
+        
+        @keyframes popIn {
+            from { 
+                transform: scale(0);
+                opacity: 0;
+            }
+            to { 
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        /* Mobile Responsive */
+        @media (min-width: 768px) {
+            .title-image {
+                max-width: 16rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            .upload-area {
+                width: 24rem;
+                height: 12rem;
+            }
+            
+            .upload-box {
+                width: 10rem;
+                height: 10rem;
+            }
+            
+            .take-photo-image {
+                width: 208px;
+                height: 208px;
+            }
+            
+            .instructions-image {
+                width: 30rem;
+            }
+            
+            .sample-strip {
+                width: 128px;
+                right: 56px;
+            }
+            
+            .download-btn {
+                right: -56px;
+                width: 128px;
+                height: 128px;
+            }
+            
+            .new-photo-btn {
+                left: -64px;
+                width: 112px;
+                height: 112px;
+            }
+            
+            .result-image {
+                max-width: 24rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Upload Section -->
+        <div id="upload-section">
+            <!-- Title Image -->
+            <div style="position: relative; display: flex; justify-content: center; margin-bottom: 16px;">
+                <img 
+                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68d90dc184e60b6096c911f0/d6b6f912d_title.png" 
+                    alt="AI Photo Booth" 
+                    class="title-image"
+                >
+            </div>
+            
+            <!-- Subtitle -->
+            <div style="text-align: center; margin-bottom: 4px; padding: 0 16px;">
+                <p class="subtitle">
+                    Create an AI photobooth experience with your friends
+                </p>
+            </div>
+            
+            <!-- Upload Container -->
+            <div class="upload-container">
+                <!-- Background decorative elements -->
+                <img 
+                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68d90dc184e60b6096c911f0/cfe9a5bf9_Bildschirmfoto2025-09-28um131215.png" 
+                    alt="Sample photobooth strip" 
+                    class="sample-strip"
+                >
+                
+                <img 
+                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68d90dc184e60b6096c911f0/dd28eff65_instructions.png" 
+                    alt="Upload instructions" 
+                    class="instructions-image"
+                >
+                
+                <!-- Image Uploaders -->
+                <div class="upload-area">
+                    <div class="upload-box" onclick="document.getElementById('file1').click()">
+                        <span id="preview1">+</span>
+                    </div>
+                    <div class="upload-box red" onclick="document.getElementById('file2').click()">
+                        <span id="preview2">+</span>
+                    </div>
+                </div>
+                
+                <input type="file" id="file1" accept="image/*" style="display: none;">
+                <input type="file" id="file2" accept="image/*" style="display: none;">
+                
+                <!-- Generate Button -->
+                <button class="generate-btn" onclick="generateImage()" id="generateBtn">
+                    <img 
+                        src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68d90dc184e60b6096c911f0/8b83b4a5a_take_photo_button.png"
+                        alt="Take Photo Button"
+                        class="take-photo-image"
+                        id="takePhotoImg"
+                    >
+                </button>
+            </div>
+        </div>
+        
+        <!-- Loading Section -->
+        <div id="loading" class="hidden">
+            <div class="loading-section">
+                <h3 style="font-family: 'Special Elite', cursive; color: #C73E2E; letter-spacing: 0.2em;">
+                    Generating your AI Photobooth image...
+                </h3>
+                <p style="font-family: 'Special Elite', cursive; color: #C73E2E; letter-spacing: 0.3em;">
+                    This may take 30-60 seconds. Please wait!
+                </p>
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+        
+        <!-- Result Section -->
+        <div id="result-section" class="hidden">
+            <div class="result-section">
+                <!-- Title Image for Result -->
+                <div style="position: relative; display: flex; justify-content: center; margin-bottom: 16px;">
+                    <img 
+                        src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68d90dc184e60b6096c911f0/d6b6f912d_title.png" 
+                        alt="AI Photo Booth" 
+                        class="title-image"
+                    >
+                </div>
+                
+                <!-- Result Title -->
+                <p class="result-title">
+                    here is your photo, you look so cute together!
+                </p>
+                
+                <!-- Photo Strip Container -->
+                <div class="photo-container">
+                    <!-- Black border around photo -->
+                    <div class="photo-border">
+                        <div class="photo-slot">
+                            <img id="resultImage" src="" alt="Generated photobooth" class="result-image">
+                        </div>
+                    </div>
+                    
+                    <!-- Download button - positioned on the right -->
+                    <a id="downloadBtn" href="" download="ai-photobooth.jpg" class="download-btn">
+                        <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68d90dc184e60b6096c911f0/86c9d1939_download_photo.png" alt="Download Photo">
+                    </a>
+                    
+                    <!-- Take new photo button - positioned on the left -->
+                    <button onclick="resetForm()" class="new-photo-btn">
+                        <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68d90dc184e60b6096c911f0/ebfc4d409_take_new_photo.png" alt="Take a new photo">
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let file1 = null;
+        let file2 = null;
+        let fileUrl1 = null;
+        let fileUrl2 = null;
+
+        // Enhanced scroll-based animations
+        let ticking = false;
+
+        function updateScrollAnimations() {
+            const scrollY = window.scrollY;
+            const maxScroll = 300; // Shorter range for more responsive effects
+            const scrollProgress = Math.min(scrollY / maxScroll, 1);
+            
+            // More pronounced rotation and transform effects
+            const sampleStrip = document.querySelector('.sample-strip');
+            if (sampleStrip) {
+                const rotation = scrollProgress * 15; // Rotate up to 15 degrees
+                const translateY = scrollProgress * 50; // Move 50px
+                const scale = 1 + (scrollProgress * 0.1); // Scale up slightly
+                sampleStrip.style.transform = `translateY(${translateY}px) rotate(${rotation}deg) scale(${scale})`;
+            }
+            
+            // More noticeable transform for upload container
+            const uploadContainer = document.querySelector('.upload-container');
+            if (uploadContainer) {
+                const scale = 1 - (scrollProgress * 0.15); // Scale down
+                const rotation = scrollProgress * -8; // Counter-rotate 8 degrees
+                const translateY = scrollProgress * -30; // Move up
+                uploadContainer.style.transform = `scale(${scale}) rotate(${rotation}deg) translateY(${translateY}px)`;
+            }
+            
+            // More dramatic parallax for title
+            const titleImage = document.querySelector('.title-image');
+            if (titleImage) {
+                const translateY = scrollProgress * -40; // Move up 40px
+                const rotation = scrollProgress * 3; // Slight rotation
+                titleImage.style.transform = `translateY(${translateY}px) rotate(${rotation}deg)`;
+            }
+            
+            // Add effects to instructions image
+            const instructionsImage = document.querySelector('.instructions-image');
+            if (instructionsImage) {
+                const rotation = scrollProgress * -5;
+                const scale = 1 + (scrollProgress * 0.08);
+                instructionsImage.style.transform = `rotate(${rotation}deg) scale(${scale})`;
+            }
+            
+            // Add subtle effects to upload boxes
+            const uploadBoxes = document.querySelectorAll('.upload-box');
+            uploadBoxes.forEach((box, index) => {
+                const direction = index === 0 ? 1 : -1; // Opposite directions
+                const rotation = scrollProgress * 10 * direction;
+                const translateX = scrollProgress * 20 * direction;
+                box.style.transform = `rotate(${rotation}deg) translateX(${translateX}px)`;
+            });
+            
+            ticking = false;
+        }
+
+        function requestScrollUpdate() {
+            if (!ticking) {
+                requestAnimationFrame(updateScrollAnimations);
+                ticking = true;
+            }
+        }
+
+        // Add scroll listener
+        window.addEventListener('scroll', requestScrollUpdate);
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', updateScrollAnimations);
+
+        document.getElementById('file1').addEventListener('change', function(e) {
+            handleFileUpload(e.target.files[0], 1);
+        });
+
+        document.getElementById('file2').addEventListener('change', function(e) {
+            handleFileUpload(e.target.files[0], 2);
+        });
+
+        async function handleFileUpload(file, slot) {
+            if (!file) return;
+            
+            // Show preview
+            const preview = document.getElementById(`preview${slot}`);
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+            };
+            reader.readAsDataURL(file);
+            
+            // Upload to backend
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const response = await fetch('/upload-file', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (slot === 1) {
+                    file1 = file;
+                    fileUrl1 = result.file_url;
+                } else {
+                    file2 = file;
+                    fileUrl2 = result.file_url;
+                }
+                
+                console.log(`File ${slot} uploaded:`, result.file_url);
+                
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Upload failed. Please try again.');
+            }
+        }
+
+        async function generateImage() {
+            if (!fileUrl1 || !fileUrl2) {
+                alert('Please upload both images first.');
+                return;
+            }
+            
+            // Add loading state to button
+            const takePhotoImg = document.getElementById('takePhotoImg');
+            takePhotoImg.classList.add('loading');
+            document.getElementById('generateBtn').disabled = true;
+            
+            // Show loading after a brief delay
+            setTimeout(() => {
+                document.getElementById('upload-section').classList.add('hidden');
+                document.getElementById('loading').classList.remove('hidden');
+            }, 300);
+            
+            try {
+                const formData = new FormData();
+                formData.append('prompt', 'A photobooth strip of the two people in the images. Style: 90s, grainy, black and white, vintage.');
+                formData.append('file_urls', JSON.stringify([fileUrl1, fileUrl2]));
+                
+                const response = await fetch('/generate-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                // Poll for completion
+                pollForCompletion(result.url);
+                
+            } catch (error) {
+                console.error('Generation error:', error);
+                alert('Generation failed. Please try again.');
+                resetForm();
+            }
+        }
+
+        async function pollForCompletion(imageUrl) {
+            const maxAttempts = 60; // 3 minutes max
+            let attempts = 0;
+            
+            const checkImage = async () => {
+                try {
+                    const response = await fetch(imageUrl);
+                    if (response.ok) {
+                        // Image is ready - show result with animation
+                        document.getElementById('loading').classList.add('hidden');
+                        document.getElementById('result-section').classList.remove('hidden');
+                        document.getElementById('resultImage').src = imageUrl;
+                        document.getElementById('downloadBtn').href = imageUrl;
+                    } else if (attempts < maxAttempts) {
+                        // Not ready yet, try again in 3 seconds
+                        attempts++;
+                        setTimeout(checkImage, 3000);
+                    } else {
+                        // Timeout
+                        alert('Generation is taking longer than expected. Please try again.');
+                        resetForm();
+                    }
+                } catch (error) {
+                    if (attempts < maxAttempts) {
+                        attempts++;
+                        setTimeout(checkImage, 3000);
+                    } else {
+                        alert('Generation failed. Please try again.');
+                        resetForm();
+                    }
+                }
+            };
+            
+            checkImage();
+        }
+
+        function resetForm() {
+            document.getElementById('upload-section').classList.remove('hidden');
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('result-section').classList.add('hidden');
+            
+            document.getElementById('preview1').innerHTML = '+';
+            document.getElementById('preview2').innerHTML = '+';
+            
+            // Reset button state
+            const takePhotoImg = document.getElementById('takePhotoImg');
+            takePhotoImg.classList.remove('loading');
+            document.getElementById('generateBtn').disabled = false;
+            
+            file1 = null;
+            file2 = null;
+            fileUrl1 = null;
+            fileUrl2 = null;
+        }
+    </script>
+</body>
+</html>
