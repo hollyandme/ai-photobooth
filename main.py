@@ -38,11 +38,23 @@ templates = Jinja2Templates(directory="templates")
 storage_service = CloudStorageService()
 ai_generator = None
 
+# Initialize services
+storage_service = CloudStorageService()
+
 def get_ai_generator():
-    global ai_generator
-    if ai_generator is None:
-        ai_generator = PhotoBoothGenerator()
-    return ai_generator
+    """Get AI generator instance with proper error handling"""
+    try:
+        from services.ai_generation import PhotoBoothGenerator
+        api_key = os.getenv('GEMINI_API_KEY')
+        if not api_key:
+            raise ValueError("GEMINI_API_KEY environment variable not set")
+        
+        generator = PhotoBoothGenerator()
+        print(f"AI generator initialized successfully")
+        return generator
+    except Exception as e:
+        print(f"Error initializing AI generator: {e}")
+        raise HTTPException(status_code=500, detail=f"AI service unavailable: {str(e)}")
 
 # Store generation jobs (in production, use a database)
 generation_jobs = {}
@@ -163,8 +175,9 @@ async def generate_photobooth_image(
         # Generate job ID and process
         job_id = str(uuid.uuid4())
         
-        # Process synchronously for simpler API
-        generated_image = await ai_generator.generate_photobooth_image(image1_data, image2_data)
+       # Process synchronously for simpler API
+generator = get_ai_generator()  # This will raise an error if it fails
+generated_image = await generator.generate_photobooth_image(image1_data, image2_data)
         
         # Save generated image
         generated_filename = f"generated_{job_id}.jpg"
