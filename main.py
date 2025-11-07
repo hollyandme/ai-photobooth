@@ -46,8 +46,8 @@ ai_generator = None
 storage_service = CloudStorageService()
 
 # Configuration for image cleanup
-IMAGE_RETENTION_HOURS = int(os.getenv('IMAGE_RETENTION_HOURS', '24'))  # Default: 24 hours
-CLEANUP_INTERVAL_MINUTES = int(os.getenv('CLEANUP_INTERVAL_MINUTES', '60'))  # Default: 60 minutes
+IMAGE_RETENTION_MINUTES = int(os.getenv('IMAGE_RETENTION_MINUTES', '2'))  # Default: 24 hours
+CLEANUP_INTERVAL_MINUTES = int(os.getenv('CLEANUP_INTERVAL_MINUTES', '2'))  # Default: 60 minutes
 TEMP_IMAGES_DIR = "temp_images"
 
 # Ensure temp directory exists
@@ -73,7 +73,7 @@ generation_jobs = {}
 
 async def cleanup_old_images():
     """
-    Periodically delete images older than IMAGE_RETENTION_HOURS
+    Periodically delete images older than IMAGE_RETENTION_MINUTES
     """
     while True:
         try:
@@ -81,7 +81,7 @@ async def cleanup_old_images():
             
             print(f"[CLEANUP] Starting cleanup task...")
             current_time = time.time()
-            retention_seconds = IMAGE_RETENTION_HOURS * 3600
+            retention_seconds = IMAGE_RETENTION_MINUTES * 60
             deleted_count = 0
             
             # Check if temp directory exists
@@ -122,7 +122,7 @@ async def cleanup_old_images():
 @app.on_event("startup")
 async def startup_event():
     """Start background tasks on application startup"""
-    print(f"[STARTUP] Starting cleanup task (retention: {IMAGE_RETENTION_HOURS}h, interval: {CLEANUP_INTERVAL_MINUTES}m)")
+    print(f"[STARTUP] Starting cleanup task (retention: {IMAGE_RETENTION_MINUTES}h, interval: {CLEANUP_INTERVAL_MINUTES}m)")
     asyncio.create_task(cleanup_old_images())
 
 @app.get("/", response_class=HTMLResponse)
@@ -382,7 +382,7 @@ async def cleanup_stats():
             "total_files": len(files),
             "total_size_mb": round(total_size / (1024 * 1024), 2),
             "oldest_file_age_hours": round(oldest_age, 2),
-            "retention_hours": IMAGE_RETENTION_HOURS,
+            "retention_hours": IMAGE_RETENTION_MINUTES,
             "cleanup_interval_minutes": CLEANUP_INTERVAL_MINUTES
         }
     except Exception as e:
@@ -393,7 +393,7 @@ async def manual_cleanup():
     """Manually trigger cleanup of old images"""
     try:
         current_time = time.time()
-        retention_seconds = IMAGE_RETENTION_HOURS * 3600
+        retention_seconds = IMAGE_RETENTION_MINUTES * 3600
         deleted_count = 0
         deleted_files = []
         
@@ -423,7 +423,7 @@ async def manual_cleanup():
         return {
             "deleted_count": deleted_count,
             "deleted_files": deleted_files,
-            "message": f"Deleted {deleted_count} file(s) older than {IMAGE_RETENTION_HOURS} hours"
+            "message": f"Deleted {deleted_count} file(s) older than {IMAGE_RETENTION_MINUTES} hours"
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
