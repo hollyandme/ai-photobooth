@@ -393,7 +393,7 @@ async def manual_cleanup():
     """Manually trigger cleanup of old images"""
     try:
         current_time = time.time()
-        retention_seconds = IMAGE_RETENTION_MINUTES * 3600
+        retention_seconds = IMAGE_RETENTION_MINUTES * 60
         deleted_count = 0
         deleted_files = []
         
