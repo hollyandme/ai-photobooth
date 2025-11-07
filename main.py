@@ -11,6 +11,10 @@ from services.ai_generation import PhotoBoothGenerator
 import uuid
 from fastapi import Form
 import json
+import asyncio
+from datetime import datetime, timedelta
+from pathlib import Path
+import time
 
 # Load environment variables
 load_dotenv()
@@ -41,6 +45,14 @@ ai_generator = None
 # Initialize services
 storage_service = CloudStorageService()
 
+# Configuration for image cleanup
+IMAGE_RETENTION_HOURS = int(os.getenv('IMAGE_RETENTION_HOURS', '24'))  # Default: 24 hours
+CLEANUP_INTERVAL_MINUTES = int(os.getenv('CLEANUP_INTERVAL_MINUTES', '60'))  # Default: 60 minutes
+TEMP_IMAGES_DIR = "temp_images"
+
+# Ensure temp directory exists
+os.makedirs(TEMP_IMAGES_DIR, exist_ok=True)
+
 def get_ai_generator():
     """Get AI generator instance with proper error handling"""
     try:
@@ -58,6 +70,60 @@ def get_ai_generator():
 
 # Store generation jobs (in production, use a database)
 generation_jobs = {}
+
+async def cleanup_old_images():
+    """
+    Periodically delete images older than IMAGE_RETENTION_HOURS
+    """
+    while True:
+        try:
+            await asyncio.sleep(CLEANUP_INTERVAL_MINUTES * 60)  # Convert minutes to seconds
+            
+            print(f"[CLEANUP] Starting cleanup task...")
+            current_time = time.time()
+            retention_seconds = IMAGE_RETENTION_HOURS * 3600
+            deleted_count = 0
+            
+            # Check if temp directory exists
+            if not os.path.exists(TEMP_IMAGES_DIR):
+                print(f"[CLEANUP] Directory {TEMP_IMAGES_DIR} does not exist")
+                continue
+            
+            # Iterate through all files in temp_images directory
+            for filename in os.listdir(TEMP_IMAGES_DIR):
+                file_path = os.path.join(TEMP_IMAGES_DIR, filename)
+                
+                # Skip if not a file
+                if not os.path.isfile(file_path):
+                    continue
+                
+                # Get file modification time
+                file_mtime = os.path.getmtime(file_path)
+                file_age_seconds = current_time - file_mtime
+                
+                # Delete if older than retention period
+                if file_age_seconds > retention_seconds:
+                    try:
+                        os.remove(file_path)
+                        deleted_count += 1
+                        file_age_hours = file_age_seconds / 3600
+                        print(f"[CLEANUP] Deleted old image: {filename} (age: {file_age_hours:.2f} hours)")
+                    except Exception as e:
+                        print(f"[CLEANUP] Error deleting {filename}: {e}")
+            
+            if deleted_count > 0:
+                print(f"[CLEANUP] Cleanup complete. Deleted {deleted_count} old image(s)")
+            else:
+                print(f"[CLEANUP] No old images to delete")
+                
+        except Exception as e:
+            print(f"[CLEANUP] Error in cleanup task: {e}")
+
+@app.on_event("startup")
+async def startup_event():
+    """Start background tasks on application startup"""
+    print(f"[STARTUP] Starting cleanup task (retention: {IMAGE_RETENTION_HOURS}h, interval: {CLEANUP_INTERVAL_MINUTES}m)")
+    asyncio.create_task(cleanup_old_images())
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
@@ -294,6 +360,73 @@ async def check_status(job_id: str):
     status = generation_jobs[job_id]
     print(f"Status check for {job_id}: {status}")
     return status
+
+@app.get("/cleanup/stats")
+async def cleanup_stats():
+    """Get statistics about stored images"""
+    try:
+        if not os.path.exists(TEMP_IMAGES_DIR):
+            return {"total_files": 0, "total_size_mb": 0, "oldest_file_age_hours": 0}
+        
+        files = [f for f in os.listdir(TEMP_IMAGES_DIR) if os.path.isfile(os.path.join(TEMP_IMAGES_DIR, f))]
+        total_size = sum(os.path.getsize(os.path.join(TEMP_IMAGES_DIR, f)) for f in files)
+        
+        current_time = time.time()
+        oldest_age = 0
+        if files:
+            oldest_file = min(files, key=lambda f: os.path.getmtime(os.path.join(TEMP_IMAGES_DIR, f)))
+            oldest_mtime = os.path.getmtime(os.path.join(TEMP_IMAGES_DIR, oldest_file))
+            oldest_age = (current_time - oldest_mtime) / 3600  # Convert to hours
+        
+        return {
+            "total_files": len(files),
+            "total_size_mb": round(total_size / (1024 * 1024), 2),
+            "oldest_file_age_hours": round(oldest_age, 2),
+            "retention_hours": IMAGE_RETENTION_HOURS,
+            "cleanup_interval_minutes": CLEANUP_INTERVAL_MINUTES
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/cleanup/manual")
+async def manual_cleanup():
+    """Manually trigger cleanup of old images"""
+    try:
+        current_time = time.time()
+        retention_seconds = IMAGE_RETENTION_HOURS * 3600
+        deleted_count = 0
+        deleted_files = []
+        
+        if not os.path.exists(TEMP_IMAGES_DIR):
+            return {"deleted_count": 0, "message": "Temp directory does not exist"}
+        
+        for filename in os.listdir(TEMP_IMAGES_DIR):
+            file_path = os.path.join(TEMP_IMAGES_DIR, filename)
+            
+            if not os.path.isfile(file_path):
+                continue
+            
+            file_mtime = os.path.getmtime(file_path)
+            file_age_seconds = current_time - file_mtime
+            
+            if file_age_seconds > retention_seconds:
+                try:
+                    os.remove(file_path)
+                    deleted_count += 1
+                    deleted_files.append({
+                        "filename": filename,
+                        "age_hours": round(file_age_seconds / 3600, 2)
+                    })
+                except Exception as e:
+                    print(f"Error deleting {filename}: {e}")
+        
+        return {
+            "deleted_count": deleted_count,
+            "deleted_files": deleted_files,
+            "message": f"Deleted {deleted_count} file(s) older than {IMAGE_RETENTION_HOURS} hours"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
